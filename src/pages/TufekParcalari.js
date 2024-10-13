@@ -1,182 +1,171 @@
-import React, { useEffect, useRef } from "react";
-import * as THREE from "three";
+import React, { useEffect, useRef, useState } from "react";
+import { setupScene } from "../components/3dWeapon-Components/SceneSetup";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
+import { createPreview } from "../components/3dWeapon-Components/CreatePreview";
 
 const TufekParcalari = () => {
-  const mountRef = useRef(null); // Reference to the DOM element where we attach the renderer
-  let scene, camera, renderer, controls, weaponGroup, body; // Variables for the Three.js scene
+  const mountRef = useRef(null);
+  const weaponGroupRef = useRef(null);
+  const previewRefs = useRef({});
 
-  // Function to initialize the scene and load the body model
+  const [parts, setParts] = useState({
+    defaultKabza: null,
+    defaultKabzaPlastik: null,
+    kabza2: null,
+    kabzaPlastik2: null,
+    tetik: null,
+    surguKolu: null,
+    namlu: null,
+  });
+
   useEffect(() => {
-    // 1. Create the Three.js scene
-    scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xaaaaaa); // Set background color
-
-    // 2. Setup the camera
-    camera = new THREE.PerspectiveCamera(
-      75,
-      window.innerWidth / window.innerHeight,
-      0.1,
-      1000
-    );
-    camera.position.set(0, 2, 5); // Position the camera
-
-    // 3. Setup the renderer
-    renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight); // Match the size to the window
-    mountRef.current.appendChild(renderer.domElement); // Attach the renderer to the DOM
-
-    // 4. Setup OrbitControls
-    controls = new OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true; // Smooth movement
-    controls.minDistance = 1; // Minimum zoom
-    controls.maxDistance = 10; // Maximum zoom
-
-    // 5. Setup lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8); // Global light
-    scene.add(ambientLight);
-
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 1); // Light from one direction
-    directionalLight.position.set(5, 10, 7.5); // Position the light
-    scene.add(directionalLight);
-
-    // 6. Create a group to hold all weapon parts
-    weaponGroup = new THREE.Group();
-    scene.add(weaponGroup);
-
-    // 7. Load the body model and add it to the group
+    const cleanupScene = setupScene(mountRef, weaponGroupRef);
     const loader = new GLTFLoader();
-    loader.load("/models/body.glb", (gltf) => {
-      body = gltf.scene;
-      weaponGroup.add(body); // Add body to the weaponGroup
+
+    // Body.glb will be permanent and cannot be removed
+    loader.load("/models/Body.glb", (gltf) => {
+      const body = gltf.scene;
+      weaponGroupRef.current.add(body); // Body remains on the scene
     });
 
-    // 8. Animation loop: render the scene and camera repeatedly
-    const animate = () => {
-      requestAnimationFrame(animate); // Loop the function
-      controls.update(); // Update OrbitControls
-      renderer.render(scene, camera); // Render the scene from the camera's point of view
-    };
-    animate(); // Start the animation
-
-    // 9. Cleanup when the component is unmounted
-    return () => {
-      mountRef.current.removeChild(renderer.domElement); // Remove the renderer on component unmount
-    };
-  }, []); // The effect runs once when the component is mounted
-
-  // Function to load and add Kabza1 to the group
-  const loadKabza1 = () => {
-    const loader = new GLTFLoader();
+    // Load default parts on refresh, but still removable
     loader.load("/models/Kabza_V1.glb", (gltf) => {
-      const kabza1 = gltf.scene;
-      weaponGroup.add(kabza1); // Add Kabza1 to the weaponGroup
+      const defaultKabza = gltf.scene;
+      weaponGroupRef.current.add(defaultKabza); // Add to scene
+      setParts((prevParts) => ({ ...prevParts, defaultKabza })); // Save state
     });
-  };
 
-  // Function to load and add Kabza2 to the group
-  const loadKabza2 = () => {
-    const loader = new GLTFLoader();
-    loader.load("/models/Kabza_V2.glb", (gltf) => {
-      const kabza2 = gltf.scene;
-      weaponGroup.add(kabza2); // Add Kabza2 to the weaponGroup
-    });
-  };
-
-  // Function to load and add KabzaPlastik1 to the group
-  const loadKabzaPlastik1 = () => {
-    const loader = new GLTFLoader();
     loader.load("/models/Kabza_Plastik_V1.glb", (gltf) => {
-      const kabzaPlastik1 = gltf.scene;
-      weaponGroup.add(kabzaPlastik1); // Add KabzaPlastik1 to the weaponGroup
+      const defaultKabzaPlastik = gltf.scene;
+      weaponGroupRef.current.add(defaultKabzaPlastik); // Add to scene
+      setParts((prevParts) => ({ ...prevParts, defaultKabzaPlastik })); // Save state
     });
-  };
 
-  // Function to load and add KabzaPlastik2 to the group
-  const loadKabzaPlastik2 = () => {
-    const loader = new GLTFLoader();
-    loader.load("/models/Kabza_Plastik_V2.glb", (gltf) => {
-      const kabzaPlastik2 = gltf.scene;
-      weaponGroup.add(kabzaPlastik2); // Add KabzaPlastik2 to the weaponGroup
-    });
-  };
-
-  // Function to load and add Tetik to the group
-  const loadTetik = () => {
-    const loader = new GLTFLoader();
     loader.load("/models/Tetik.glb", (gltf) => {
       const tetik = gltf.scene;
-      weaponGroup.add(tetik); // Add Tetik to the weaponGroup
+      weaponGroupRef.current.add(tetik);
+      setParts((prevParts) => ({ ...prevParts, tetik }));
     });
-  };
 
-  // Function to load and add Surgu Kolu to the group
-  const loadSurguKolu = () => {
-    const loader = new GLTFLoader();
     loader.load("/models/Surgu_Kolu.glb", (gltf) => {
       const surguKolu = gltf.scene;
-      weaponGroup.add(surguKolu); // Add Surgu Kolu to the weaponGroup
+      weaponGroupRef.current.add(surguKolu);
+      setParts((prevParts) => ({ ...prevParts, surguKolu }));
     });
-  };
 
-  // Function to load and add Namlu to the group
-  const loadNamlu = () => {
-    const loader = new GLTFLoader();
     loader.load("/models/Namlu.glb", (gltf) => {
       const namlu = gltf.scene;
-      weaponGroup.add(namlu); // Add Namlu to the weaponGroup
+      weaponGroupRef.current.add(namlu);
+      setParts((prevParts) => ({ ...prevParts, namlu }));
     });
+
+    // Previews (small images) are created
+    createPreview("defaultKabza", "/models/Kabza_V1.glb", previewRefs);
+    createPreview(
+      "defaultKabzaPlastik",
+      "/models/Kabza_Plastik_V1.glb",
+      previewRefs
+    );
+    createPreview("kabza2", "/models/Kabza_V2.glb", previewRefs);
+    createPreview("kabzaPlastik2", "/models/Kabza_Plastik_V2.glb", previewRefs);
+    createPreview("tetik", "/models/Tetik.glb", previewRefs);
+    createPreview("surguKolu", "/models/Surgu_Kolu.glb", previewRefs);
+    createPreview("namlu", "/models/Namlu.glb", previewRefs);
+
+    return cleanupScene;
+  }, []);
+
+  // Function to toggle the visibility of parts (for all parts including defaults)
+  const togglePart = (partName, modelPath) => {
+    const loader = new GLTFLoader();
+    const currentPart = parts[partName];
+
+    // Ensure weaponGroupRef is initialized
+    if (!weaponGroupRef.current) {
+      console.error("weaponGroup is not initialized yet.");
+      return;
+    }
+
+    if (currentPart) {
+      // If part exists in the scene, remove it
+      weaponGroupRef.current.remove(currentPart);
+      setParts((prevParts) => ({ ...prevParts, [partName]: null }));
+    } else {
+      // If part is not in the scene, load it and add it
+      loader.load(modelPath, (gltf) => {
+        const newPart = gltf.scene;
+        weaponGroupRef.current.add(newPart);
+        setParts((prevParts) => ({ ...prevParts, [partName]: newPart }));
+      });
+    }
   };
 
   return (
     <div className="flex gap-2">
-      <div ref={mountRef} className="w-[80%] h-screen" />
-      {/* 3D scene container */}
+      <div ref={mountRef} className="w-[60%] h-screen" />
       <div className="w-[20%] flex flex-col gap-2 mt-4 mr-4">
-        {/* Buttons to add specific parts */}
         <button
-          onClick={loadKabza1}
+          onClick={() => togglePart("defaultKabza", "/models/Kabza_V1.glb")}
           className="bg-gray-600 rounded-lg px-4 py-2 hover:bg-gray-500 text-white font-semibold"
         >
-          Add Kabza1
+          {parts.defaultKabza ? "Remove Default Kabza" : "Add Default Kabza"}
         </button>
+        <div ref={(el) => (previewRefs.current.defaultKabza = el)} />
+
         <button
-          onClick={loadKabza2}
+          onClick={() =>
+            togglePart("defaultKabzaPlastik", "/models/Kabza_Plastik_V1.glb")
+          }
           className="bg-gray-600 rounded-lg px-4 py-2 hover:bg-gray-500 text-white font-semibold"
         >
-          Add Kabza2
+          {parts.defaultKabzaPlastik
+            ? "Remove Default Kabza Plastik"
+            : "Add Default Kabza Plastik"}
         </button>
+        <div ref={(el) => (previewRefs.current.defaultKabzaPlastik = el)} />
+
         <button
-          onClick={loadKabzaPlastik1}
+          onClick={() => togglePart("kabza2", "/models/Kabza_V2.glb")}
           className="bg-gray-600 rounded-lg px-4 py-2 hover:bg-gray-500 text-white font-semibold"
         >
-          Add KabzaPlastik1
+          {parts.kabza2 ? "Remove Kabza2" : "Add Kabza2"}
         </button>
+        <div ref={(el) => (previewRefs.current.kabza2 = el)} />
+
         <button
-          onClick={loadKabzaPlastik2}
+          onClick={() =>
+            togglePart("kabzaPlastik2", "/models/Kabza_Plastik_V2.glb")
+          }
           className="bg-gray-600 rounded-lg px-4 py-2 hover:bg-gray-500 text-white font-semibold"
         >
-          Add KabzaPlastik2
+          {parts.kabzaPlastik2 ? "Remove KabzaPlastik2" : "Add KabzaPlastik2"}
         </button>
+        <div ref={(el) => (previewRefs.current.kabzaPlastik2 = el)} />
+      </div>
+      <div className="w-[20%] flex flex-col gap-2 mt-4 mr-4">
         <button
-          onClick={loadTetik}
+          onClick={() => togglePart("tetik", "/models/Tetik.glb")}
           className="bg-gray-600 rounded-lg px-4 py-2 hover:bg-gray-500 text-white font-semibold"
         >
-          Add Tetik
+          {parts.tetik ? "Remove Tetik" : "Add Tetik"}
         </button>
+        <div ref={(el) => (previewRefs.current.tetik = el)} />
+
         <button
-          onClick={loadSurguKolu}
+          onClick={() => togglePart("surguKolu", "/models/Surgu_Kolu.glb")}
           className="bg-gray-600 rounded-lg px-4 py-2 hover:bg-gray-500 text-white font-semibold"
         >
-          Add Surgu Kolu
+          {parts.surguKolu ? "Remove Surgu Kolu" : "Add Surgu Kolu"}
         </button>
+        <div ref={(el) => (previewRefs.current.surguKolu = el)} />
+
         <button
-          onClick={loadNamlu}
+          onClick={() => togglePart("namlu", "/models/Namlu.glb")}
           className="bg-gray-600 rounded-lg px-4 py-2 hover:bg-gray-500 text-white font-semibold"
         >
-          Add Namlu
+          {parts.namlu ? "Remove Namlu" : "Add Namlu"}
         </button>
+        <div ref={(el) => (previewRefs.current.namlu = el)} />
       </div>
     </div>
   );
